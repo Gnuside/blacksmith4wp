@@ -1,0 +1,16 @@
+#!/bin/sh
+
+# préparer Vagrant
+# préparer git
+# préparer git + les modules puppet qui-vont-bien 
+# préparer le site wp avec forge
+
+customer="$1"
+project_path="$2"
+
+echo "Customer: $customer"
+echo "Project path: $project_path"
+
+mkdir -p ${project_path}
+
+
