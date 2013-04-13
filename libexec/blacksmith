@@ -1,16 +1,205 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 # préparer Vagrant
 # préparer git
 # préparer git + les modules puppet qui-vont-bien 
 # préparer le site wp avec forge
 
-customer="$1"
-project_path="$2"
+set -u
 
-echo "Customer: $customer"
-echo "Project path: $project_path"
+set -e
+[ -n "${BLACKSMITH_DEBUG:-}" ] && set -x
 
-mkdir -p ${project_path}
+filter_dir() {
+	echo -n "$1" | sed -e 's|/$||'
+}
+
+filter_customer() {
+	echo -n "$1" | sed -e 's/[^a-zA-Z0-9]/_/g' -e 's/__*/_/g' 
+}
+
+filter_domain() {
+	echo -n "$1" | sed -e 's/[^a-zA-Z0-9.-]/_/g' -e 's/__*/_/g' 
+}
+
+require_bin() {
+	command=$1
+	which "$command" > /dev/null
+	if [ $? -ne 0 ]; then
+		echo "ERROR: $command not found"
+		exit 1
+	fi
+}
+
+install_file() {
+	src=$1
+	dst=$2
+
+	echo "$src -> $dst"
+	mkdir -p $(dirname $dst)
+	cat $src | sed \
+		-e "s/<% CUSTOMER_ID %>/${customer_id}/g" \
+		-e "s/<% CUSTOMER_DOMAIN %>/${customer_domain}/g" \
+		> $dst
+}
+
+BLACKSMITH_ROOT=$(realpath "$(dirname "$0")/../" )
+BLACKSMITH_CWD=$(pwd)
+
+customer_id=""
+customer_domain=""
+project_dir=""
+
+while [ $# -gt 0 ]; do
+	args=$1
+	case "$args" in
+		-i|--id)
+			customer_id=$2
+			shift #force shift
+			;;
+		-d|--domain)
+			customer_domain=$2
+			shift # force shift
+			;;
+		-t|--target)
+			project_dir=$2
+			shift # force shift
+			;;
+		-h|--help)
+			echo "Usage: $(basename "$0") [-i customer] [-d domain] [-t target]"
+			exit 1
+			;;
+		*)
+			echo "ERROR: unknown argument '$args'" >&2
+			exit 1
+			;;
+	esac
+	shift
+done
 
 
+#
+# VALIDATE DEPENDENCIES
+#
+
+# Ruby
+
+require_bin ruby
+require_bin bundle
+
+
+#
+# FILTER INPUT
+#
+
+customer_id=$(filter_customer "${customer_id}")
+if [ -z "$customer_domain" ]; then
+	customer_domain="${customer_id}.local"
+else
+	customer_domain=$(filter_domain "${customer_domain}")
+fi
+project_dir=$(filter_dir "${project_dir}")
+
+
+#
+# VALIDATE INPUT
+#
+if [ -z "$customer_id" ]; then
+	echo "ERROR: no customer defined." >&2
+	exit 1
+fi
+if [ -z "$project_dir" ]; then
+	echo "ERROR: no project directory defined." >&2
+	exit 1
+fi
+
+echo "BLACKSMITH_ROOT : $BLACKSMITH_ROOT"
+echo "Customer ID     : $customer_id"
+echo "Customer Domain : $customer_domain"
+echo "Project         : $project_dir"
+
+mkdir -p "${project_dir}"
+mkdir -p "${project_dir}/graphs"
+mkdir -p "${project_dir}/scripts"
+mkdir -p "${project_dir}/vendor"
+mkdir -p "${project_dir}/${customer_id}-wp"
+mkdir -p "${project_dir}/${customer_id}-db"
+mkdir -p "${project_dir}/${customer_id}-data"
+mkdir -p "${project_dir}/${customer_id}-config"
+
+project_dir=$(realpath "${project_dir}")
+
+#
+# POPULATE PROJECT
+#
+
+# MAIN : Gemfile
+
+cd $BLACKSMITH_CWD ; cd "${project_dir}"
+pwd
+
+if [ -f "${project_dir}/Gemfile" ]; then
+	echo "ERROR: Gemfile already exists"
+	exit 1
+fi
+install_file ${BLACKSMITH_ROOT}/libdata/Gemfile "${project_dir}/Gemfile"
+git add Gemfile
+git commit -m "VM: Add Gemfile" Gemfile
+
+bundle install --path vendor/bundle
+
+
+
+# MAIN : Vagrant
+
+if [ -f "${project_dir}/Vagrantfile" ]; then
+	echo "ERROR: Vagrantfile already exists"
+	exit 1
+fi
+install_file ${BLACKSMITH_ROOT}/libdata/Vagrantfile "${project_dir}/Vagrantfile"
+git add Vagrantfile
+git commit -m "VM: Add Vagrantfile" Vagrantfile
+
+
+# MAIN: Installing puppet modules
+
+mkdir -p "${project_dir}/puppet/manifests"
+mkdir -p "${project_dir}/puppet/modules"
+mkdir -p "${project_dir}/puppet/remote-modules"
+
+install_file ${BLACKSMITH_ROOT}/libdata/puppet.manifest.customer.pp "${project_dir}/puppet/manifests/${customer_id}.pp"
+
+git init
+git submodule add git://github.com/puppetlabs/puppetlabs-apt "puppet/remote-modules/apt"
+git submodule add git://github.com/puppetlabs/puppetlabs-stdlib "puppet/remote-modules/stdlib"
+git submodule add git@github.com:Gnuside/puppet-apache2.git "puppet/remote-modules/apache2"
+git submodule add git@github.com:Gnuside/puppet-mysql.git "puppet/remote-modules/mysql"
+git submodule add git@github.com:Gnuside/puppet-php.git "puppet/remote-modules/php"
+git submodule add git@github.com:Gnuside/puppet-wordpress.git "puppet/remote-modules/wordpress"
+git commit -m "VM: Add submodules" -a
+
+# FIXME: MAIN: prepare gitignore
+
+
+cd $BLACKSMITH_CWD ; cd "${project_dir}/${customer_id}-wp"
+pwd
+
+# FORGE : Gemfile
+git init 
+
+if [ -f "${project_dir}/${customer_id}-wp/Gemfile" ]; then
+	echo "ERROR: ${customer_id}-wp/Gemfile already exists"
+	exit 1
+fi
+install_file ${BLACKSMITH_ROOT}/libdata/customer.Gemfile "${project_dir}/${customer_id}-wp/Gemfile"
+bundle install --path vendor/bundle
+
+git add Gemfile Gemfile.lock
+git commit  -m "FORGE: Add Gemfile & Gemfile.lock" -a
+
+# FIXME: FORGE : prepare gitignore's
+
+bundle exec forge create .
+git add config.rb source
+
+git commit  -m "FORGE: Add forge project's source & config" -a
