@@ -155,6 +155,8 @@ install_file ${BLACKSMITH_ROOT}/libdata/Gemfile "${project_dir}/Gemfile"
 
 
 bundle install --path vendor/bundle
+git add Gemfile Gemfile.lock
+git commit -m "VM: Add Gemfile, Gemfile.lock & .gitignore" -a
 
 cat > .gitignore <<EOF
 /.bundle
@@ -165,9 +167,8 @@ cat > .gitignore <<EOF
 *~
 EOF
 
-git add Gemfile Gemfile.lock .gitignore
-git commit -a -m "VM: Add Gemfile, Gemfile.lock & .gitignore"
-
+git add .gitignore
+git commit -a -m "VM: Add gitignore for temporary files"
 
 
 # MAIN : Vagrant
@@ -217,6 +218,18 @@ bundle install --path vendor/bundle
 
 git add Gemfile Gemfile.lock
 git commit  -m "FORGE: Add Gemfile & Gemfile.lock" -a
+
+cat > .gitignore <<EOF
+/.bundle
+/.vagrant
+/vendor/bundle
+/tmp
+/graphs/*.png
+*~
+EOF
+
+git add .gitignore
+git commit -m "FORGE: Add gitignore for temporary files" -a
 
 # FIXME: FORGE : prepare gitignore's
 
