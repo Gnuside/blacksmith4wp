@@ -1,0 +1,7 @@
+
+source "https://rubygems.org"
+
+gem "vagrant", "~> 1.0.5"
+gem 'vagrant-list', '~> 0.0.5'
+gem 'ffi', '~> 1.2.0'
+gem 'puppet', '~> 3.0.2'
