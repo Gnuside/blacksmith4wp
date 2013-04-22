@@ -43,6 +43,13 @@ install_file() {
 		> $dst
 }
 
+help() {
+	echo "Usage: $(basename $0) [options]"
+	echo "--id, -i CUSTOMER       Customer name"
+	echo "--domain, -d DOMAIN     Site domain"
+	echo "--target, -t TARGET     Project directory"
+	echo "--help, -h              Show this help"
+}
 BLACKSMITH_ROOT=$(realpath "$(dirname "$0")/../" )
 BLACKSMITH_CWD=$(pwd)
 
