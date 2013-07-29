@@ -2,7 +2,7 @@
 
 # préparer Vagrant
 # préparer git
-# préparer git + les modules puppet qui-vont-bien 
+# préparer git + les modules puppet qui-vont-bien
 # préparer le site wp avec forge
 
 set -u
@@ -11,15 +11,15 @@ set -e
 [ -n "${BLACKSMITH_DEBUG:-}" ] && set -x
 
 filter_dir() {
-	echo -n "$1" | sed -e 's|/$||'
+	printf "$1" | sed -e 's|/$||'
 }
 
 filter_customer() {
-	echo -n "$1" | sed -e 's/[^a-zA-Z0-9]/_/g' -e 's/__*/_/g' 
+	printf "$1" | sed -e 's/[^a-zA-Z0-9]/_/g' -e 's/__*/_/g'
 }
 
 filter_domain() {
-	echo -n "$1" | sed -e 's/[^a-zA-Z0-9.-]/_/g' -e 's/__*/_/g' 
+	printf "$1" | sed -e 's/[^a-zA-Z0-9.-]/_/g' -e 's/__*/_/g'
 }
 
 require_bin() {
@@ -50,7 +50,7 @@ help() {
 	echo "--target, -t TARGET     Project directory"
 	echo "--help, -h              Show this help"
 }
-BLACKSMITH_ROOT=$(realpath "$(dirname "$0")/../" )
+BLACKSMITH_ROOT=$(cd "$(dirname "$0")/../" ; pwd -P )
 BLACKSMITH_CWD=$(pwd)
 
 customer_id=""
@@ -134,7 +134,7 @@ mkdir -p "${project_dir}/${customer_id}-db"
 mkdir -p "${project_dir}/${customer_id}-data"
 mkdir -p "${project_dir}/${customer_id}-config"
 
-project_dir=$(realpath "${project_dir}")
+project_dir=$(cd "${project_dir}" ; pwd)
 
 #
 # POPULATE PROJECT
@@ -207,7 +207,7 @@ cd $BLACKSMITH_CWD ; cd "${project_dir}/${customer_id}-wp"
 pwd
 
 # FORGE : Gemfile
-git init 
+git init
 
 if [ -f "${project_dir}/${customer_id}-wp/Gemfile" ]; then
 	echo "ERROR: ${customer_id}-wp/Gemfile already exists"
