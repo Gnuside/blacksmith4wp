@@ -13,7 +13,7 @@ Vagrant::Config.run do |config|
           '--verbose',
           '--debug',
           '--graph',
-          '--graphdir /vagrant/graphs'
+          '--graphdir /vagrant/puppet/graphs'
   ].join(' ')
   config.vm.provision :puppet, :options => puppet_options do |puppet|
      puppet.module_path = ["puppet/remote-modules","puppet/modules" ]

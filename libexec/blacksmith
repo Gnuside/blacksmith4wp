@@ -184,9 +184,11 @@ git commit -m "VM: Add Vagrantfile" Vagrantfile
 
 # MAIN: Installing puppet modules
 
+mkdir -p "${project_dir}/puppet/graphs"
 mkdir -p "${project_dir}/puppet/manifests"
 mkdir -p "${project_dir}/puppet/modules"
 mkdir -p "${project_dir}/puppet/remote-modules"
+touch "${project_dir}/puppet/graphs/.empty"
 touch "${project_dir}/puppet/manifests/.empty"
 touch "${project_dir}/puppet/modules/.empty"
 touch "${project_dir}/puppet/remote-modules/.empty"
