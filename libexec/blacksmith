@@ -43,6 +43,19 @@ install_file() {
 		> $dst
 }
 
+set_tracking() {
+	local repo_dir=$1
+	local branch_name=$2
+	local cur_dir=$(pwd)
+
+	cd ${repo_dir}
+	if ! git branch |grep -q ". ${branch_name}" ; then
+		echo "  * Adding branch ${branch_name}, tracking remote origin/${branch_name}..."
+		git checkout -b "${branch_name}" "origin/${branch_name}"
+	fi
+	cd ${cur_dir}
+}
+
 help() {
 	echo "Usage: $(basename $0) [options]"
 	echo "--id, -i CUSTOMER       Customer name"
@@ -129,7 +142,6 @@ echo "Customer Domain : $customer_domain"
 echo "Project         : $project_dir"
 
 mkdir -p "${project_dir}"
-mkdir -p "${project_dir}/graphs"
 mkdir -p "${project_dir}/scripts"
 mkdir -p "${project_dir}/vendor"
 mkdir -p "${project_dir}/${customer_id}-wp"
@@ -166,7 +178,8 @@ cat > .gitignore <<EOF
 /.vagrant
 /vendor/bundle
 /tmp
-/graphs/*.png
+/puppet/graphs/*.png
+/puppet/graphs/*.dot
 *~
 EOF
 
@@ -207,24 +220,16 @@ git submodule add git://github.com/puppetlabs/puppetlabs-apt "puppet/remote-modu
 git submodule add git://github.com/puppetlabs/puppetlabs-stdlib "puppet/remote-modules/stdlib"
 
 git submodule add git@github.com:Gnuside/puppet-apache2.git "puppet/remote-modules/apache2"
-cd "puppet/remote-modules/apache2" ; 
-git checkout -b master -t origin/master
-cd "${project_dir}"
+set_tracking "puppet/remote-modules/apache2" "master"
 
 git submodule add git@github.com:Gnuside/puppet-mysql.git "puppet/remote-modules/mysql"
-cd "puppet/remote-modules/apache2" ; 
-git checkout -b master -t origin/master
-cd "${project_dir}"
+set_tracking "puppet/remote-modules/mysql" "master"
 
 git submodule add git@github.com:Gnuside/puppet-php.git "puppet/remote-modules/php"
-cd "puppet/remote-modules/apache2" ; 
-git checkout -b master -t origin/master
-cd "${project_dir}"
+set_tracking "puppet/remote-modules/php" "master"
 
 git submodule add git@github.com:Gnuside/puppet-wordpress.git "puppet/remote-modules/wordpress"
-cd "puppet/remote-modules/apache2" ; 
-git checkout -b master -t origin/master
-cd "${project_dir}"
+set_tracking "puppet/remote-modules/wordpress" "master"
 
 git commit -m "VM: Add submodules" -a
 
