@@ -77,7 +77,8 @@ while [ $# -gt 0 ]; do
 			exit 1
 			;;
 		*)
-			echo "ERROR: unknown argument '$args'" >&2
+			printf "ERROR: unknown argument '$args'\n\n" >&2
+			help >&2
 			exit 1
 			;;
 	esac
@@ -112,11 +113,13 @@ project_dir=$(filter_dir "${project_dir}")
 # VALIDATE INPUT
 #
 if [ -z "$customer_id" ]; then
-	echo "ERROR: no customer defined." >&2
+	printf "ERROR: no customer defined.\n\n" >&2
+	help >&2
 	exit 1
 fi
 if [ -z "$project_dir" ]; then
-	echo "ERROR: no project directory defined." >&2
+	printf "ERROR: no project directory defined.\n\n" >&2
+	help >&2
 	exit 1
 fi
 
@@ -202,10 +205,27 @@ git commit -m "VM: Add puppet manifest" -a
 
 git submodule add git://github.com/puppetlabs/puppetlabs-apt "puppet/remote-modules/apt"
 git submodule add git://github.com/puppetlabs/puppetlabs-stdlib "puppet/remote-modules/stdlib"
+
 git submodule add git@github.com:Gnuside/puppet-apache2.git "puppet/remote-modules/apache2"
+cd "puppet/remote-modules/apache2" ; 
+git checkout -b master -t origin/master
+cd "${project_dir}"
+
 git submodule add git@github.com:Gnuside/puppet-mysql.git "puppet/remote-modules/mysql"
+cd "puppet/remote-modules/apache2" ; 
+git checkout -b master -t origin/master
+cd "${project_dir}"
+
 git submodule add git@github.com:Gnuside/puppet-php.git "puppet/remote-modules/php"
+cd "puppet/remote-modules/apache2" ; 
+git checkout -b master -t origin/master
+cd "${project_dir}"
+
 git submodule add git@github.com:Gnuside/puppet-wordpress.git "puppet/remote-modules/wordpress"
+cd "puppet/remote-modules/apache2" ; 
+git checkout -b master -t origin/master
+cd "${project_dir}"
+
 git commit -m "VM: Add submodules" -a
 
 # FIXME: MAIN: prepare gitignore
